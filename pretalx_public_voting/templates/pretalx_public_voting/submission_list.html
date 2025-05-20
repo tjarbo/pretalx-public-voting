@@ -23,6 +23,12 @@
     <h1>{% trans "Public voting" %}</h1>
     {{ request.event.public_vote_settings.text|rich_text }}
     {% if hashed_email %}
+        Hi
+        <form method="POST">
+            {% csrf_token %}
+            {{ filter_form }}
+            <button type="submit" name="action" value="filter">{% trans "Filter" %}</button>
+        </form>
         <form method="POST">
             {% csrf_token %}
             {% for submission in submissions %}

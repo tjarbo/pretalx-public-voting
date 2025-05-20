@@ -14,9 +14,10 @@ from django.views.generic.list import ListView
 from django_context_decorator import context
 from pretalx.common.views.mixins import PermissionRequired
 from pretalx.submission.models import Submission, SubmissionStates
+import urllib
 
 from .exporters import PublicVotingCSVExporter
-from .forms import PublicVotingSettingsForm, SignupForm, VoteForm
+from .forms import PublicVotingSettingsForm, SignupForm, VoteForm, FilterForm
 from .models import PublicVote, PublicVotingSettings
 from .utils import event_unsign
 
@@ -121,9 +122,21 @@ class SubmissionListView(PublicVotingRequired, ListView):
             event=self.request.event,
             prefix=submission.code,
         )
+    
+    def get_filter_form(self):
+        return FilterForm(
+            event=self.request.event
+        )
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
+        result["filter_form"] = self.get_filter_form()
+        # submission_code = self.request.GET.get("submission_code")
+        # if submission_code:
+        #     result["filter_active"] = True
+        #     result["remove_filter_url"] = self.request.path
+        # else:
+        #     result["filter_active"] = False
         for submission in result["submissions"]:
             submission.vote_form = self.get_form_for_submission(submission)
         return result
@@ -147,6 +160,10 @@ class SubmissionListView(PublicVotingRequired, ListView):
         if request.POST.get("action") == "manual":
             messages.success(self.request, _("Thank you for your vote!"))
             return redirect(self.request.path)
+        if request.POST.get("action") == "filter":
+            form = FilterForm(request.POST, event=self.request.event)
+            if form.is_valid():
+                return redirect("%s?%s" % (self.request.path, urllib.parse.urlencode(form.cleaned_data)))
         return JsonResponse({})
 
 

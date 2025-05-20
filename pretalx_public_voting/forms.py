@@ -112,9 +112,25 @@ class VoteForm(forms.Form):
             defaults={"score": self.cleaned_data["score"]},
         )
 
+class FilterForm(forms.Form):
+    def __init__(self, *args, event=None,**kwargs):
+        self.event = event
+        super().__init__(*args, **kwargs)
+
+        available_tracks = event.public_vote_settings.limit_tracks.all()
+        if len(available_tracks) == 0:
+            available_tracks = event.tracks.all()
+        
+        self.fields["fiter_tracks"] = forms.MultipleChoiceField(
+            choices=[(track.name, track.name) for track in available_tracks],
+            label=_("Filter submissions by track"),
+            help_text=_("Only show submissions part of a certain track"),
+            required=False,
+        )
 
 class PublicVotingSettingsForm(I18nModelForm):
     def __init__(self, *args, **kwargs):
+        
         super().__init__(*args, **kwargs)
         self.fields["limit_tracks"].queryset = self.instance.event.tracks.all()
         self.fields["limit_submission_types"].queryset = (
